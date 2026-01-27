@@ -2,12 +2,12 @@
 
 This project implements the Brain Initialization (BI) paradigm for training CLIP models on ViT-B/32. BI adapts the Perceptual-Initialization (PI) training scaffold to use brain-derived representational structure as the step-0 prior for the vision encoder. PI is introduced in the paper "Beginning with You: Perceptual-Initialization Improves Vision-Language Representation and Alignment" on ArXiV.
 
-The core idea is to initialize the vision encoder using similarity constraints derived from the Natural Object Dataset (NOD) fMRI representational geometry. After this initialization stage, we run standard large-scale self-supervised image–text contrastive pretraining on YFCC15M. We compare against a matched baseline trained from random initialization.
+The core idea is to initialize the vision encoder using triplet-based similarity constraints derived from the Natural Object Dataset (NOD) fMRI representational geometry. After this initialization stage, we run standard large-scale self-supervised image–text contrastive pretraining on YFCC15M. We compare against a matched baseline trained from random initialization.
 
 ## Features
 
+- **Brain-derived triplet mining:** Aggregates ROI RDM vectors into group RDMs (early/mid/late/all), then mines category triplets by sampling positives from the closest fraction and negatives from the farthest fraction in brain dissimilarity space.
 -   **Brain Initialization:** Uses NOD fMRI representational structure (RDM-derived similarity orderings) to seed the vision encoder before web-scale pretraining.
--   **Multiple ViT Architectures:** Supports ViT-B/32, ViT-B/16, ViT-L/14, and ViT-H/14 model variants for comprehensive experimentation.
 -   **YFCC15M Pretraining:** Supports large-scale contrastive pretraining on the YFCC15M dataset across all model variants.
 -   **JSON-based Configuration System:** Employs a flexible JSON-based configuration system with backward compatibility for easy experiment management.
 -   **Distributed Training:** Supports Distributed Data Parallel (DDP) training using `torchrun`, facilitated by the `launch_ddp.sh` script.
@@ -59,12 +59,32 @@ pip install -r requirements.txt
 
 This project uses two main datasets:
 
-1.  **NIGHTS Dataset:** Used for brain initialization (Stage 1).
-    *   You will need: 1) the NOD stimulus images used to instantiate image triplets, and 2) the fMRI-derived representational structure (e.g., RDMs) used to define similarity constraints
+1.  **NOD Dataset:** Used for brain initialization (Stage 1).
+    *   You will need the NOD stimulus images used to instantiate image triplets.
     *   Configure the path in the training configurations under `data.dataset_root`.
 2.  **YFCC15M Dataset:** Used for large-scale contrastive pretraining (For Stage 2 of PI, and Baseline).
     *   The project can use a pre-downloaded version (e.g., Parquet files) or stream from Hugging Face Hub.
     *   For litData streaming, ensure `data.hf_dataset_name` is correctly set (e.g., `'hf://datasets/Kaichengalex/YFCC15M/data'`).
+
+### Creating NOD Triplets
+
+We convert NOD fMRI representational dissimilarity matrices (RDMs) into category triplets (anchor, positive, negative) used for BI initialization. The pipeline is:
+
+1) Aggregate ROI RDMs into group RDMs (`rdm_agg.py`)
+- We define ROI groups:
+  - **early**: V1, V2, V3
+  - **mid**: V4, V8, LO1, LO2, LO3
+  - **late**: PIT, VVC, FFC, VMV1, VMV2, VMV3
+  - **all**: early + mid + late
+- For each group, we average all available ROI vectors across subjects/ROIs.
+
+2) Mine triplets from each group RDM (`nod_triplet.py`)
+- For each group vector, we reconstruct the square RDM.
+- For each anchor, we sample:
+  - a **positive** from the closest `POS_FRAC` fraction (default: 3%)
+  - a **negative** from the farthest `NEG_TAIL_FRAC` fraction (default: 5%)
+- We repeat this `TRIPLETS_PER_ANCHOR` times per anchor (default: 50).
+- We save `train_triplets.csv`, `val_triplets.csv`, `test_triplets.csv` for each group (90/5/5 split).
 
 ## Training
 
