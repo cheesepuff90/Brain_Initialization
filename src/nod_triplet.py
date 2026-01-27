@@ -3,16 +3,13 @@ import json
 import numpy as np
 import pandas as pd
 
-# ----------------------------
-# HARD-CODE PATHS HERE
-# ----------------------------
+# HARD-CODE PATHS 
 GROUP_RDM_DIR = Path("T:\\multimodal_brain_inspired\\BI\\triplet")         # contains early_group_rdm_vector.npy, etc.
 OUT_BASE_DIR  = Path("T:\\multimodal_brain_inspired\\BI\\triplet\\csv")   # where triplet CSVs will be written
 FILENAMES_TXT = Path("C:\\Users\\BrainInspired\\Documents\\GitHub\\NaturalObjectDataset-Processing\\Nick_RDMs\\outputs\\sub-02\\filenames.txt")
-# ----------------------------
 
 # Which group RDMs to generate triplets for:
-GROUPS = ["early", "mid", "late", "all"]  # or ["all"] to start simple
+GROUPS = ["early", "mid", "late", "all"]
 
 # Triplet mining hyperparams
 TRIPLETS_PER_ANCHOR = 50   # total triplets per anchor category (e.g., 1000 anchors -> 50k triplets)
@@ -20,7 +17,7 @@ POS_FRAC = 0.03            # positives sampled from closest 3% (lowest dissimila
 NEG_TAIL_FRAC = 0.05       # negatives sampled from farthest 5% (highest dissimilarity)
 SEED = 42
 
-# Split fractions over TRIPLETS (not anchors)
+# Split fractions over triplets
 TRAIN_FRAC = 0.90
 VAL_FRAC   = 0.05
 TEST_FRAC  = 0.05
@@ -170,3 +167,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
