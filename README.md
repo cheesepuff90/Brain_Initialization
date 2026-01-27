@@ -1,10 +1,12 @@
-# Perceptual Initialization and Pre-training with CLIP
+# Brain Initialization and Pre-training with CLIP
 
-This project implements the Perceptual-Initialization (PI) paradigm for training CLIP models across multiple Vision Transformer variants (ViT-B/32, ViT-B/16, ViT-L/14, ViT-H/14), as described in the paper "Beginning with You: Perceptual-Initialization Improves Vision-Language Representation and Alignment." The core idea is to initialize the vision encoder using human perceptual similarity data from the NIGHTS dataset before conducting large-scale self-supervised contrastive pretraining on the YFCC15M dataset. This approach has demonstrated significant zero-shot performance improvements.
+This project implements the Brain Initialization (BI) paradigm for training CLIP models on ViT-B/32. BI adapts the Perceptual-Initialization (PI) training scaffold to use brain-derived representational structure as the step-0 prior for the vision encoder. PI is introduced in the paper "Beginning with You: Perceptual-Initialization Improves Vision-Language Representation and Alignment" on ArXiV.
+
+The core idea is to initialize the vision encoder using similarity constraints derived from the Natural Object Dataset (NOD) fMRI representational geometry. After this initialization stage, we run standard large-scale self-supervised image–text contrastive pretraining on YFCC15M. We compare against a matched baseline trained from random initialization.
 
 ## Features
 
--   **Perceptual Initialization:** Leverages the NIGHTS dataset to imbue the vision encoder with human perceptual priors before large-scale training.
+-   **Brain Initialization:** Uses NOD fMRI representational structure (RDM-derived similarity orderings) to seed the vision encoder before web-scale pretraining.
 -   **Multiple ViT Architectures:** Supports ViT-B/32, ViT-B/16, ViT-L/14, and ViT-H/14 model variants for comprehensive experimentation.
 -   **YFCC15M Pretraining:** Supports large-scale contrastive pretraining on the YFCC15M dataset across all model variants.
 -   **JSON-based Configuration System:** Employs a flexible JSON-based configuration system with backward compatibility for easy experiment management.
@@ -57,8 +59,8 @@ pip install -r requirements.txt
 
 This project uses two main datasets:
 
-1.  **NIGHTS Dataset:** Used for perceptual initialization (Stage 1 of PI) and perceptual fine-tuning.
-    *   Download from [DreamSim](https://github.com/ssundaram21/dreamsim).
+1.  **NIGHTS Dataset:** Used for brain initialization (Stage 1).
+    *   You will need: 1) the NOD stimulus images used to instantiate image triplets, and 2) the fMRI-derived representational structure (e.g., RDMs) used to define similarity constraints
     *   Configure the path in the training configurations under `data.dataset_root`.
 2.  **YFCC15M Dataset:** Used for large-scale contrastive pretraining (For Stage 2 of PI, and Baseline).
     *   The project can use a pre-downloaded version (e.g., Parquet files) or stream from Hugging Face Hub.
