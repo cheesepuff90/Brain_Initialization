@@ -17,30 +17,17 @@ The project uses a flexible JSON-based configuration system located in the `conf
 
 ### Model Configurations (`config/modelconfig/`)
 - `vit_b_32.json` - ViT-B/32 model configuration
-- `vit_b_16.json` - ViT-B/16 model configuration  
-- `vit_l_14.json` - ViT-L/14 model configuration
-- `vit_h_14.json` - ViT-H/14 model configuration
 
 ### Training Configurations (`config/trainingconfig/`)
 
-**Step 1: NIGHTS Initialization**
-- `nights_init.json` - ViT-B/32 NIGHTS initialization
-- `nights_init_vitb16.json` - ViT-B/16 NIGHTS initialization
-- `nights_init_vitl14.json` - ViT-L/14 NIGHTS initialization
-- `nights_init_vith14.json` - ViT-H/14 NIGHTS initialization
+**Step 1: NOD Initialization**
+- `nod_init_vitb32.json` - ViT-B/32 NIGHTS initialization
 
 **Step 2: Perceptual-Initialized YFCC15M Pretraining**
 - `perceptual_init_yfcc15m_vitb32.json` - ViT-B/32 perceptual-initialized pretraining
-- `perceptual_init_yfcc15m_vitb16.json` - ViT-B/16 perceptual-initialized pretraining
-- `perceptual_init_yfcc15m_vitl14.json` - ViT-L/14 perceptual-initialized pretraining
-- `perceptual_init_yfcc15m_vith14.json` - ViT-H/14 perceptual-initialized pretraining
 
 **Step 3: Baseline YFCC15M Pretraining**
 - `declip_yfcc15m_litdata_vitb32.json` - ViT-B/32 baseline pretraining
-- `declip_yfcc15m_litdata_vith14.json` - ViT-H/14 baseline pretraining
-
-**Step 3: Fine-tuning**
-- `nights_ft_from_yfcc.json` - QKV fine-tuning configuration
 
 ## Setup and Installation
 
@@ -110,15 +97,6 @@ Train the vision encoder on the NIGHTS dataset using triplet contrastive loss:
 ```bash
 # ViT-B/32
 ./launch_ddp.sh --config_preset="nights"
-
-# ViT-B/16  
-./launch_ddp.sh --config_preset="nights_init_vitb16"
-
-# ViT-L/14
-./launch_ddp.sh --config_preset="nights_init_vitl14"
-
-# ViT-H/14
-./launch_ddp.sh --config_preset="nights_init_vith14"
 ```
 
 Note the path to the saved checkpoint for use in Step 2.
@@ -129,16 +107,7 @@ Train the full CLIP model with the perceptually initialized vision encoder:
 
 ```bash
 # ViT-B/32
-./launch_ddp.sh --config_preset="nights_init_yfcc15m_litdata"
-
-# ViT-B/16
-./launch_ddp.sh --config_preset="perceptual_init_yfcc15m_vitb16"
-
-# ViT-L/14  
-./launch_ddp.sh --config_preset="perceptual_init_yfcc15m_vitl14"
-
-# ViT-H/14
-./launch_ddp.sh --config_preset="perceptual_init_yfcc15m_vith14"
+./launch_ddp.sh --config_preset="perceptual_init_yfcc15m_vitb32"
 ```
 
 The configurations automatically load the appropriate NIGHTS checkpoint via `init_ckpt_path`.
@@ -150,19 +119,6 @@ Train CLIP models from scratch on YFCC15M:
 ```bash
 # ViT-B/32
 ./launch_ddp.sh --config_preset="yfcc15m_litdata"
-
-# ViT-H/14
-./launch_ddp.sh --config_preset="declip_yfcc15m_litdata_vith14"
-```
-
-#### Step 3: Fine-tuning (alternative approach)
-
-Fine-tune only the QKV layers on NIGHTS after YFCC15M pretraining:
-
-```bash
-# ViT-B/32 (requires YFCC15M checkpoint)
-./launch_ddp.sh --config_preset="nights_ft_from_yfcc" \
-                --init_ckpt_path="/path/to/your/yfcc15m_checkpoint.ckpt"
 ```
 
 ### Configuration Customization
@@ -171,11 +127,11 @@ You can override any configuration parameter via command line:
 
 ```bash
 # Override batch size and learning rate
-./launch_ddp.sh --config_preset="nights" --batch_size=256 --lr=0.001
+./launch_ddp.sh --config_preset="nod" --batch_size=256 --lr=0.001
 
 # Override checkpoint path for perceptual initialization
 ./launch_ddp.sh --config_preset="perceptual_init_yfcc15m_vitl14" \
-                --init_ckpt_path="/custom/path/to/nights_checkpoint.ckpt"
+                --init_ckpt_path="/custom/path/to/nod_checkpoint.ckpt"
 ```
 
 ## Development
