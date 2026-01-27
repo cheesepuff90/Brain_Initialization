@@ -64,11 +64,6 @@ This project uses two main datasets:
     *   Configure the path in the training configurations under `data.dataset_root`.
 2.  **YFCC15M Dataset:** Used for large-scale contrastive pretraining (For Stage 2 of PI, and Baseline).
     *   The project can use a pre-downloaded version (e.g., Parquet files) or stream from Hugging Face Hub.
-    *   To prefetch (recommended for multiple runs), you can use the provided script:
-        ```bash
-        python download.py
-        ```
-        This script will output the storage location. Configure this path in the training configurations under `data.parquet_data_dir`.
     *   For litData streaming, ensure `data.hf_dataset_name` is correctly set (e.g., `'hf://datasets/Kaichengalex/YFCC15M/data'`).
 
 ## Training
@@ -92,7 +87,7 @@ chmod +x launch_ddp.sh
 
 The following presets correspond to the complete experimental pipeline across all model variants:
 
-#### Step 1: NIGHTS Initialization (Perceptual Initialization)
+#### Step 1: NOD Initialization (Perceptual Initialization)
 
 Train the vision encoder on the NIGHTS dataset using triplet contrastive loss:
 
@@ -152,7 +147,7 @@ This project is licensed under the MIT License.
 
 This work builds upon and utilizes several key resources and prior research:
 -   [OpenCLIP](https://github.com/mlfoundations/open_clip) for the CLIP model implementations.
--   [DreamSim](https://github.com/dreamsim-nights/dreamsim) for the NIGHTS dataset and triplet training insights.
+-   Natural Object Dataset (NOD) for brain-derived representational constraints.
 -   [YFCC15M Dataset](https://huggingface.co/datasets/Kaichengalex/YFCC15M) and related processing for training data.
 -   [DeCLIP](https://github.com/Sense-GVT/DeCLIP) for training recipe insights.
 -   [DataComp](https://github.com/mlfoundations/datacomp) for evaluation dataset and recipe insights.
