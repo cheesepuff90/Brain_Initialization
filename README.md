@@ -1,6 +1,6 @@
 # Brain Initialization and Pre-training with CLIP
 
-This project implements the Brain Initialization (BI) paradigm for training CLIP models on ViT-B/32. BI adapts the Perceptual-Initialization (PI) training scaffold to use brain-derived representational structure as the step-0 prior for the vision encoder. PI is introduced in the paper "Beginning with You: Perceptual-Initialization Improves Vision-Language Representation and Alignment" on ArXiV.
+This project implements the Brain Initialization (BI) paradigm for training CLIP models on ViT-B/32. BI adapts the Perceptual-Initialization (PI) training to use brain-derived representational structure as the step-0 prior for the vision encoder. PI is introduced in the paper "Beginning with You: Perceptual-Initialization Improves Vision-Language Representation and Alignment" on ArXiV.
 
 The core idea is to initialize the vision encoder using triplet-based similarity constraints derived from the Natural Object Dataset (NOD) fMRI representational geometry. After this initialization stage, we run standard large-scale self-supervised image–text contrastive pretraining on YFCC15M. We compare against a matched baseline trained from random initialization.
 
