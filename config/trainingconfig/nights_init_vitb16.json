@@ -1,0 +1,79 @@
+{
+    "name": "nights_init_vitb16",
+    "model_config": "vit_b_16",
+    "data": {
+        "dataset_root": "/tmp/nights/nights",
+        "dataset_type": "nights",
+        "hf_dataset_name": null,
+        "hf_cache_dir": null,
+        "hf_streaming": false,
+        "use_litdata": false,
+        "parquet_data_dir": null,
+        "image_size": 224,
+        "batch_size": 128,
+        "num_workers": 8,
+        "pin_memory": true,
+        "interpolation": "bicubic",
+        "tokenizer_name": "openai/clip-vit-base-patch16",
+        "image_col": "images",
+        "text_col": "texts",
+        "val_dataset_root": "/tmp/dataset_eval",
+        "eval_batch_size": null
+    },
+    "optimizer": {
+        "name": "adamw",
+        "lr": 0.0005,
+        "weight_decay": 0.1,
+        "beta1": 0.9,
+        "beta2": 0.98,
+        "eps": 1e-8
+    },
+    "scheduler": {
+        "name": "cosine",
+        "warmup_steps": 150,
+        "epochs": null,
+        "warmup_lr_vision": 1e-4,
+        "warmup_lr_text": 1e-3,
+        "lr_cooldown_end": 1e-7,
+        "lr_cooldown_power": 1.0,
+        "cooldown_steps": null,
+        "min_lr": 0.0
+    },
+    "loss": {
+        "margin": 0.05,
+        "distance_type": "cosine",
+        "scale": 1.0
+    },
+    "distributed": {
+        "strategy": "ddp",
+        "sync_batchnorm": true,
+        "find_unused_parameters": true,
+        "num_nodes": 1
+    },
+    "wandb": {
+        "enabled": true,
+        "project": "pretrain",
+        "name": null,
+        "entity": "alberthu233",
+        "tags": ["clip", "vit-b16", "dreamsim", "nights"],
+        "log_model": false,
+        "save_code": false
+    },
+    "epochs": 32,
+    "precision": "bf16",
+    "seed": 42,
+    "accelerator": "auto",
+    "devices": 6,
+    "gradient_clip_val": null,
+    "accumulate_grad_batches": 1,
+    "log_every_n_steps": 50,
+    "save_dir": "/tmp/checkpoints/pretrain/nights_init_vitb16",
+    "save_top_k": 3,
+    "save_every_n_train_steps": null,
+    "deterministic": true,
+    "freeze_vision_blocks": 0,
+    "validate_every_n_epoch": 1,
+    "validate_every_n_steps": null,
+    "monitor_metric": "val/triplet_loss",
+    "monitor_mode": "min"
+} 

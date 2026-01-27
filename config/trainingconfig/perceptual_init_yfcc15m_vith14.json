@@ -1,0 +1,79 @@
+{
+    "name": "perceptual_init_yfcc15m_vith14",
+    "model_config": "vit_h_14",
+    "data": {
+        "dataset_root": null,
+        "dataset_type": "yfcc15m_litdata",
+        "hf_dataset_name": "hf://datasets/Kaichengalex/YFCC15M/data",
+        "hf_cache_dir": "/dev/shm/tmp",
+        "hf_streaming": false,
+        "use_litdata": true,
+        "parquet_data_dir": null,
+        "image_size": 224,
+        "batch_size": 256,
+        "num_workers": 16,
+        "pin_memory": false,
+        "interpolation": "bicubic",
+        "tokenizer_name": "openai/clip-vit-huge-patch14",
+        "image_col": "images",
+        "text_col": "texts",
+        "val_dataset_root": "/tmp/dataset_eval",
+        "eval_batch_size": 90
+    },
+    "optimizer": {
+        "name": "adamw",
+        "lr": 0.0002,
+        "weight_decay": 0.1,
+        "beta1": 0.9,
+        "beta2": 0.98,
+        "eps": 1e-8
+    },
+    "scheduler": {
+        "name": "cosine",
+        "warmup_steps": 2500,
+        "lr_cooldown_end": 1e-7,
+        "lr_cooldown_power": 1.0,
+        "cooldown_steps": null,
+        "min_lr": 0.0
+    },
+    "loss": {
+        "margin": null,
+        "distance_type": null,
+        "local_loss": false,
+        "gather_with_grad": false,
+        "cache_labels": true,
+        "scale": 1.0
+    },
+    "distributed": {
+        "strategy": "ddp",
+        "sync_batchnorm": true,
+        "find_unused_parameters": false,
+        "num_nodes": 1
+    },
+    "wandb": {
+        "enabled": true,
+        "project": "pretrain",
+        "name": null,
+        "entity": null,
+        "tags": ["clip", "vit-h14", "yfcc15m", "litdata", "perceptual-init"],
+        "log_model": false,
+        "save_code": true
+    },
+    "epochs": 64,
+    "precision": "bf16-mixed",
+    "seed": 42,
+    "accelerator": "auto",
+    "devices": "auto",
+    "gradient_clip_val": 3,
+    "accumulate_grad_batches": 24,
+    "log_every_n_steps": 50,
+    "save_dir": "/tmp/checkpoints/perceptual_init_yfcc15m_vith14_checkpoints",
+    "save_top_k": 64,
+    "save_every_n_train_steps": null,
+    "deterministic": true,
+    "freeze_vision_blocks": 0,
+    "validate_every_n_epoch": 1,
+    "monitor_metric": "val/cifar100/epoch_acc1",
+    "monitor_mode": "max",
+    "init_ckpt_path": "/tmp/checkpoints/nights_init_vith14_checkpoints/best_checkpoint.ckpt"
+} 

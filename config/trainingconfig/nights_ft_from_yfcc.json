@@ -1,0 +1,79 @@
+{
+    "name": "nights_ft_from_yfcc",
+    "model_config": "vit_b_32",
+    "data": {
+        "dataset_root": "/tmp/nights/nights",
+        "dataset_type": "nights",
+        "hf_dataset_name": null,
+        "hf_cache_dir": null,
+        "hf_streaming": false,
+        "use_litdata": false,
+        "parquet_data_dir": null,
+        "image_size": 224,
+        "batch_size": 16,
+        "num_workers": 8,
+        "pin_memory": true,
+        "interpolation": "bicubic",
+        "tokenizer_name": "openai/clip-vit-base-patch32",
+        "image_col": "images",
+        "text_col": "texts",
+        "val_dataset_root": "/tmp/dataset_eval",
+        "eval_batch_size": null
+    },
+    "optimizer": {
+        "name": "adam",
+        "lr": 0.00001,
+        "weight_decay": 0.0,
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "eps": 1e-8
+    },
+    "scheduler": {
+        "name": "cosine",
+        "warmup_steps": 150,
+        "epochs": null,
+        "warmup_lr_vision": 1e-4,
+        "warmup_lr_text": 1e-3,
+        "lr_cooldown_end": 1e-7,
+        "lr_cooldown_power": 1.0,
+        "cooldown_steps": null,
+        "min_lr": 0.0
+    },
+    "loss": {
+        "margin": 0.05,
+        "distance_type": "cosine",
+        "scale": 1.0
+    },
+    "distributed": {
+        "strategy": "ddp",
+        "sync_batchnorm": true,
+        "find_unused_parameters": false,
+        "num_nodes": 1
+    },
+    "wandb": {
+        "enabled": true,
+        "project": "pretrain",
+        "name": null,
+        "entity": null,
+        "tags": ["clip", "vit-b32", "nights-ft", "yfcc-pretrained", "qkv-finetune"],
+        "log_model": true,
+        "save_code": true
+    },
+    "epochs": 64,
+    "precision": "bf16-mixed",
+    "seed": 42,
+    "accelerator": "auto",
+    "devices": "auto",
+    "gradient_clip_val": 3,
+    "log_every_n_steps": 50,
+    "save_dir": "/tmp/checkpoints/nights_ft_from_yfcc_checkpoints",
+    "save_top_k": 3,
+    "save_every_n_train_steps": null,
+    "deterministic": true,
+    "freeze_vision_blocks": 0,
+    "validate_every_n_epoch": 1,
+    "validate_every_n_steps": null,
+    "monitor_metric": "val/triplet_loss",
+    "monitor_mode": "min",
+    "init_ckpt_path": "/home/huy28/ondemand/alberthu233/pretrain/checkpoints/pi/last.ckpt"
+} 
