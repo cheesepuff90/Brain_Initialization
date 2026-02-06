@@ -1590,5 +1590,5 @@ The lightweight Stage A (~3 GPU-hours) is a key efficiency advantage over post-h
 5. **Individualization analysis** — does initializing with YOUR brain's triplets help the model understand YOUR brain?
 6. **Direct comparison** — behavioral triplets (NIGHTS) vs. neural triplets (fMRI RDMs) — same method, different signal source
 
----
+
 
