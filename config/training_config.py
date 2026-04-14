@@ -243,23 +243,3 @@ class NodTrainingConfig(TrainingConfig):
     save_every_n_train_steps: Optional[int] = None
     # target_batch_size: int = 512  # Pick a sensible default
     target_batch_size: int = 2048
-
-class ThingsTrainingConfig(TrainingConfig):
-    """Training config for THINGS triplet dataset initialization"""
-    epochs: int = 32
-    monitor_metric: str = "val/epoch_accuracy"  # CHANGED from val/triplet_loss
-    monitor_mode: str = "max"
-    validate_every_n_epoch: int = 1
-    validate_every_n_steps: Optional[Union[int, float]] = None
-    save_every_n_train_steps: Optional[int] = None
-    target_batch_size: int = 2048  
-
-class ImageNet1kTrainingConfig(TrainingConfig):
-    """Training config for ImageNet-1k dataset initialization"""
-    epochs: int = 32
-    monitor_metric: str = "val/triplet_loss"  # Same as NIGHTS
-    monitor_mode: str = "min"
-    validate_every_n_epoch: int = 1
-    validate_every_n_steps: Optional[Union[int, float]] = None
-    save_every_n_train_steps: Optional[int] = None
-    target_batch_size: int = 2048  # Same as NIGHTS
