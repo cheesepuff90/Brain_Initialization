@@ -39,11 +39,11 @@ from config import (
     BASELINE_YFCC15M_VITH14_CONFIG,
     BASELINE_YFCC15M_RESNET50_CONFIG,
     
-    PERCEPTUAL_INIT_YFCC15M_VITB32_CONFIG,
-    PERCEPTUAL_INIT_YFCC15M_VITB16_CONFIG,
-    PERCEPTUAL_INIT_YFCC15M_VITL14_CONFIG,
-    PERCEPTUAL_INIT_YFCC15M_VITH14_CONFIG,
-    PERCEPTUAL_INIT_YFCC15M_RESNET50_CONFIG,
+    BRAIN_INIT_YFCC15M_VITB32_CONFIG,
+    BRAIN_INIT_YFCC15M_VITB16_CONFIG,
+    BRAIN_INIT_YFCC15M_VITL14_CONFIG,
+    BRAIN_INIT_YFCC15M_VITH14_CONFIG,
+    BRAIN_INIT_YFCC15M_RESNET50_CONFIG,
     
     NIGHTS_FT_FROM_YFCC_VITB32_CONFIG,
     
@@ -187,10 +187,10 @@ def parse_args():
             # Baseline YFCC15M pretraining (Step 3 baseline)
             "declip_yfcc15m_litdata_vitb32", "declip_yfcc15m_litdata_vitb16", "declip_yfcc15m_litdata_vitl14", "declip_yfcc15m_litdata_vith14",
             "declip_yfcc15m_litdata_resnet50",  # ResNet-50 baseline
-            # Perceptual-initialized YFCC15M pretraining (Step 2)
-            "perceptual_init_yfcc15m_vitb32", "perceptual_init_yfcc15m_vitb16", 
-            "perceptual_init_yfcc15m_vitl14", "perceptual_init_yfcc15m_vith14",
-            "perceptual_init_yfcc15m_resnet50",  # ResNet-50 perceptual init
+            # brain-initialized YFCC15M pretraining (Step 2)
+            "brain_init_yfcc15m_vitb32", "brain_init_yfcc15m_vitb16", 
+            "brain_init_yfcc15m_vitl14", "brain_init_yfcc15m_vith14",
+            "brain_init_yfcc15m_resnet50",  # ResNet-50 brain init
             # Fine-tuning (Step 3)
             "nights_ft_from_yfcc_vitb32"
         ],
@@ -433,33 +433,33 @@ def setup_training_config(args) -> Union[TrainingConfig, DeCLIPLitDataTrainingCo
         default_monitor_metric = config.monitor_metric
         default_monitor_mode = config.monitor_mode
         using_litdata = True
-    # Perceptual-initialized YFCC15M pretraining (Step 2)
-    elif args.config_preset == "perceptual_init_yfcc15m_vitb32":
-        config = PERCEPTUAL_INIT_YFCC15M_VITB32_CONFIG.model_copy(deep=True)
+    # brain-initialized YFCC15M pretraining (Step 2)
+    elif args.config_preset == "brain_init_yfcc15m_vitb32":
+        config = BRAIN_INIT_YFCC15M_VITB32_CONFIG.model_copy(deep=True)
         current_config_class = DeCLIPLitDataTrainingConfig
         default_monitor_metric = config.monitor_metric
         default_monitor_mode = config.monitor_mode
         using_litdata = True
-    elif args.config_preset == "perceptual_init_yfcc15m_vitb16":
-        config = PERCEPTUAL_INIT_YFCC15M_VITB16_CONFIG.model_copy(deep=True)
+    elif args.config_preset == "brain_init_yfcc15m_vitb16":
+        config = BRAIN_INIT_YFCC15M_VITB16_CONFIG.model_copy(deep=True)
         current_config_class = DeCLIPLitDataTrainingConfig
         default_monitor_metric = config.monitor_metric
         default_monitor_mode = config.monitor_mode
         using_litdata = True
-    elif args.config_preset == "perceptual_init_yfcc15m_vitl14":
-        config = PERCEPTUAL_INIT_YFCC15M_VITL14_CONFIG.model_copy(deep=True)
+    elif args.config_preset == "brain_init_yfcc15m_vitl14":
+        config = BRAIN_INIT_YFCC15M_VITL14_CONFIG.model_copy(deep=True)
         current_config_class = DeCLIPLitDataTrainingConfig
         default_monitor_metric = config.monitor_metric
         default_monitor_mode = config.monitor_mode
         using_litdata = True
-    elif args.config_preset == "perceptual_init_yfcc15m_vith14":
-        config = PERCEPTUAL_INIT_YFCC15M_VITH14_CONFIG.model_copy(deep=True)
+    elif args.config_preset == "brain_init_yfcc15m_vith14":
+        config = BRAIN_INIT_YFCC15M_VITH14_CONFIG.model_copy(deep=True)
         current_config_class = DeCLIPLitDataTrainingConfig
         default_monitor_metric = config.monitor_metric
         default_monitor_mode = config.monitor_mode
         using_litdata = True
-    elif args.config_preset == "perceptual_init_yfcc15m_resnet50":
-        config = PERCEPTUAL_INIT_YFCC15M_RESNET50_CONFIG.model_copy(deep=True)
+    elif args.config_preset == "brain_init_yfcc15m_resnet50":
+        config = BRAIN_INIT_YFCC15M_RESNET50_CONFIG.model_copy(deep=True)
         current_config_class = DeCLIPLitDataTrainingConfig
         default_monitor_metric = config.monitor_metric
         default_monitor_mode = config.monitor_mode
