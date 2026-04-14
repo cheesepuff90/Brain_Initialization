@@ -12,30 +12,40 @@ The core idea is to initialize the vision encoder using triplet-based similarity
 -   **JSON-based Configuration System:** Employs a flexible JSON-based configuration system with backward compatibility for easy experiment management.
 -   **Distributed Training:** Supports Distributed Data Parallel (DDP) training using `torchrun`, facilitated by the `launch_ddp.sh` script.
 -   **Comprehensive 3-Step Experiment:** Includes configurations for the complete experimental pipeline across all model variants.
+-   **Multi-Architecture Support:** Provides end-to-end pipelines for multiple vision backbones, including ViT-B/32, ViT-L/14, ViT-H/14, ViT-B/16, and ResNet-50, enabling consistent evaluation of Brain Initialization across model scales and architectures.
 
 ## Configuration System
 
 The project uses a flexible JSON-based configuration system located in the `config/` directory:
 
 ### Model Configurations (`config/modelconfig/`)
-- `vit_b_32.json` - ViT-B/32 model configuration
+The project supports multiple vision backbones, each with its own configuration:
+
+- `vit_b_32.json` — ViT-B/32
+- `vit_b_16.json` — ViT-B/16
+- `vit_l_14.json` — ViT-L/14
+- `vit_h_14.json` — ViT-H/14
+- `resnet_50.json` — ResNet-50
 
 ### Training Configurations (`config/trainingconfig/`)
 
 **Step 1: NOD Initialization**
-- `nod_init_vitb32.json` - ViT-B/32 NOD initialization
+- `nod_init_<arch>.json` — Brain initialization using triplet contrastive learning  
+  (e.g., `nod_init_vitb32.json`, `nod_init_vitl14.json`, `nod_init_resnet50.json`)
 
 **Step 2: Brain-Initialized YFCC15M Pretraining**
-- `perceptual_init_yfcc15m_vitb32.json` - ViT-B/32 brain-initialized pretraining
+- `brain_init_yfcc15m_<arch>.json` — CLIP pretraining with brain-initialized encoder  
+  (e.g., `brain_init_yfcc15m_vitb32.json`, `brain_init_yfcc15m_vith14.json`)
 
 **Step 3: Baseline YFCC15M Pretraining**
-- `declip_yfcc15m_litdata_vitb32.json` - ViT-B/32 baseline pretraining
+- `declip_yfcc15m_litdata_<arch>.json` — CLIP training from random initialization  
+  (e.g., `declip_yfcc15m_litdata_vitb32.json`, `declip_yfcc15m_litdata_resnet50.json`)
 
 ## Setup and Installation
 
 ### Requirements
 
--   Python 3.7+
+-   Python 3.9+
 -   PyTorch 2.0+
 -   CUDA-capable GPU (recommended for training)
 
@@ -124,7 +134,7 @@ Train the full CLIP model with the brain-initialized vision encoder:
 
 ```bash
 # ViT-B/32
-./launch_ddp.sh --config_preset="perceptual_init_yfcc15m_vitb32"
+./launch_ddp.sh --config_preset="brain_init_yfcc15m_vitb32"
 ```
 
 The configurations automatically load the appropriate NOD checkpoint via `init_ckpt_path`.
@@ -140,14 +150,14 @@ Train CLIP models from scratch on YFCC15M:
 
 ### Configuration Customization
 
-You can override any configuration parameter via command line:
+You can override any configuration parameter via the command line:
 
 ```bash
 # Override batch size and learning rate
 ./launch_ddp.sh --config_preset="nod_initvitb32" --batch_size=256 --lr=0.001
 
-# Override checkpoint path for perceptual initialization
-./launch_ddp.sh --config_preset="perceptual_init_yfcc15m_vitb32" \
+# Override checkpoint path for brain initialization
+./launch_ddp.sh --config_preset="brain_init_yfcc15m_vitb32" \
                 --init_ckpt_path="/custom/path/to/nod_checkpoint.ckpt"
 ```
 
