@@ -1,5 +1,5 @@
 {
-    "name": "perceptual_init_yfcc15m_resnet50",
+    "name": "brain_init_yfcc15m_resnet50",
     "model_config": "resnet_50",
     "data": {
         "dataset_root": null,
