@@ -21,17 +21,11 @@ from pytorch_lightning.utilities.rank_zero import rank_zero_info # For logging o
 from config import (
     get_config,
     
-
-    # Unified naming conventions
     NOD_INIT_VITB32_CONFIG,
     NOD_INIT_VITB16_CONFIG,
     NOD_INIT_VITL14_CONFIG,
     NOD_INIT_VITH14_CONFIG,
     NOD_INIT_RESNET50_CONFIG,
-    
-    # THINGS initialization configs
-    THINGS_INIT_VITB32_CONFIG,
-    # IMAGENET1K_INIT_VITB32_CONFIG,
     
     BASELINE_YFCC15M_VITB32_CONFIG,
     BASELINE_YFCC15M_VITB16_CONFIG,
@@ -44,10 +38,8 @@ from config import (
     BRAIN_INIT_YFCC15M_VITL14_CONFIG,
     BRAIN_INIT_YFCC15M_VITH14_CONFIG,
     BRAIN_INIT_YFCC15M_RESNET50_CONFIG,
-    
-    NIGHTS_FT_FROM_YFCC_VITB32_CONFIG,
-    
-    TrainingConfig, DeCLIPLitDataTrainingConfig, NodTrainingConfig, ThingsTrainingConfig,# Import base types
+        
+    TrainingConfig, DeCLIPLitDataTrainingConfig, NodTrainingConfig,# Import base types
 )
 # Import dataset and module
 from src.dataset import create_dataloaders # Updated function
@@ -180,10 +172,6 @@ def parse_args():
             # NOD initialization (Step 1)
             "nod_init_vitb32", "nod_init_vitb16", "nod_init_vitl14", "nod_init_vith14",
             "nod_init_resnet50",  # ResNet-50 variant
-            # THINGS initialization (Alternative to NOD)
-            "things_init_vitb32",
-            # ImageNet-1k initialization (Ablation study)
-            "imagenet1k_init_vitb32",
             # Baseline YFCC15M pretraining (Step 3 baseline)
             "declip_yfcc15m_litdata_vitb32", "declip_yfcc15m_litdata_vitb16", "declip_yfcc15m_litdata_vitl14", "declip_yfcc15m_litdata_vith14",
             "declip_yfcc15m_litdata_resnet50",  # ResNet-50 baseline
@@ -191,8 +179,6 @@ def parse_args():
             "brain_init_yfcc15m_vitb32", "brain_init_yfcc15m_vitb16", 
             "brain_init_yfcc15m_vitl14", "brain_init_yfcc15m_vith14",
             "brain_init_yfcc15m_resnet50",  # ResNet-50 brain init
-            # Fine-tuning (Step 3)
-            "nights_ft_from_yfcc_vitb32"
         ],
         help="Choose a configuration preset for the 3-step experiment."
     )
@@ -205,8 +191,8 @@ def parse_args():
 
     # --- Dataset Arguments (Overrides presets if provided) ---
     parser.add_argument(
-        "--dataset_type", type=str, choices=["nod", "things", "imagenet1k", "yfcc15m", "yfcc15m_litdata"], # Added things and imagenet1k
-        help="Type of dataset ('nod', 'things', 'imagenet1k', 'yfcc15m' (HF streaming), 'yfcc15m_litdata'). Overrides preset."
+        "--dataset_type", type=str, choices=["nod", "yfcc15m", "yfcc15m_litdata"],
+        help="Type of dataset ('nod', 'yfcc15m' (HF streaming), 'yfcc15m_litdata'). Overrides preset."
     )
     parser.add_argument(
         "--dataset_root", type=str, help="Path to the NOD dataset root."
@@ -390,18 +376,6 @@ def setup_training_config(args) -> Union[TrainingConfig, DeCLIPLitDataTrainingCo
         current_config_class = NodTrainingConfig
         default_monitor_metric = config.monitor_metric
         default_monitor_mode = config.monitor_mode
-        # THINGS initialization configs  
-    elif args.config_preset == "things_init_vitb32":
-        config = THINGS_INIT_VITB32_CONFIG.model_copy(deep=True)
-        current_config_class = ThingsTrainingConfig  
-        default_monitor_metric = config.monitor_metric
-        default_monitor_mode = config.monitor_mode
-    # ImageNet-1k initialization config (ablation study)
-    # elif args.config_preset == "imagenet1k_init_vitb32":
-    #     config = IMAGENET1K_INIT_VITB32_CONFIG.model_copy(deep=True)
-    #     current_config_class = TrainingConfig  
-    #     default_monitor_metric = config.monitor_metric
-    #     default_monitor_mode = config.monitor_mode
     # Baseline YFCC15M pretraining (Step 3 baseline)
     elif args.config_preset == "declip_yfcc15m_litdata_vitb32":
         config = BASELINE_YFCC15M_VITB32_CONFIG.model_copy(deep=True)
@@ -464,14 +438,6 @@ def setup_training_config(args) -> Union[TrainingConfig, DeCLIPLitDataTrainingCo
         default_monitor_metric = config.monitor_metric
         default_monitor_mode = config.monitor_mode
         using_litdata = True
-    # Fine-tuning (Step 3)
-    elif args.config_preset == "nights_ft_from_yfcc_vitb32":
-        config = NIGHTS_FT_FROM_YFCC_VITB32_CONFIG.model_copy(deep=True)
-        current_config_class = NodTrainingConfig
-        default_monitor_metric = config.monitor_metric
-        default_monitor_mode = config.monitor_mode
-        # This mode does not use LitData for its primary NIGHTS dataset
-        using_litdata = False
     else:
         raise ValueError(f"Invalid config_preset: {args.config_preset}.")
 
@@ -894,7 +860,7 @@ def main():
     # Determine train_dataset_size for the Lightning Module scheduler (only for epoch-based NIGHTS)
     # We don't need train_dataset_size for LitData as the scheduler relies on trainer's max_epochs
     train_dataset_size_for_module = 0
-    if config.data.dataset_type in ['nod', 'things', 'imagenet1k'] and max_epochs_trainer > 0: # Epoch-based triplet datasets
+    if config.data.dataset_type in ['nod'] and max_epochs_trainer > 0: # Epoch-based triplet datasets
         try:
             if data_loaders.get("train") and hasattr(data_loaders["train"], 'dataset') and hasattr(data_loaders["train"].dataset, '__len__'):
                 train_dataset_size_for_module = len(data_loaders["train"].dataset)
@@ -924,54 +890,9 @@ def main():
             rank_zero_info("Vision weight loading attempt finished (if applicable). Text branch remains as per its initialization.")
     else:
         rank_zero_info("No init_ckpt_path specified in config, or attribute not found. Skipping weight initialization from checkpoint.")
-
-    # --- Freezing Logic for QKV Fine-tuning ---
-    if args.config_preset == "nights_ft_from_yfcc_vitb32":
-        rank_zero_info("Configuring model for fine-tuning: Freezing all weights except Vision QKV layers.")
-        
-        # Freeze all parameters in the CLIP model instance first
-        for param in model.model.parameters():
-            param.requires_grad = False
-        rank_zero_info("All parameters in model.model initially frozen.")
-
-        # Unfreeze QKV layers in the vision transformer
-        unfrozen_qkv_count = 0
-        if hasattr(model.model, 'visual') and hasattr(model.model.visual, 'transformer'):
-            for i, block in enumerate(model.model.visual.transformer):
-                if hasattr(block, 'attn') and hasattr(block.attn, 'qkv'):
-                    for name, param in block.attn.qkv.named_parameters():
-                        param.requires_grad = True
-                        # rank_zero_info(f"  Unfrozen: visual.transformer[{i}].attn.qkv.{name}")
-                        unfrozen_qkv_count +=1
-        if unfrozen_qkv_count > 0:
-             rank_zero_info(f"Unfroze {unfrozen_qkv_count} parameters in Vision QKV layers.")
-        else:
-             rank_zero_info("Warning: No Vision QKV parameters found or unfrozen. Check model structure.")
-
-
-        # Log trainable parameters to verify
-        rank_zero_info("Trainable parameters after QKV unfreezing:")
-        for name, param in model.model.named_parameters():
-            if param.requires_grad:
-                rank_zero_info(f"  - {name} (shape: {param.shape})")
     
     if args.config_preset == "nod_init_vitb32":
         rank_zero_info("Configuring model for NOD training: Freezing text branch and logit scale.")
-        
-        # Freeze text branch
-        if hasattr(model.model, 'text'):
-            for param in model.model.text.parameters():
-                param.requires_grad = False
-            rank_zero_info("Text branch frozen.")
-        
-        # Freeze logit scale
-        if hasattr(model.model, 'logit_scale'):
-            model.model.logit_scale.requires_grad = False
-            rank_zero_info("Logit scale frozen.")
-        
-    # After the existing nights_init_vitb32 freeze logic:
-    if args.config_preset =="things_init_vitb32":
-        rank_zero_info("Configuring model for THINGS training: Freezing text branch and logit scale.")
         
         # Freeze text branch
         if hasattr(model.model, 'text'):
