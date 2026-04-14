@@ -1,5 +1,5 @@
 {
-    "name": "perceptual_init_yfcc15m_vitl14",
+    "name": "brain_init_yfcc15m_vitl14",
     "model_config": "vit_l_14",
     "data": {
         "dataset_root": null,
