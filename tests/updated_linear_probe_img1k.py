@@ -2,9 +2,11 @@ import os
 import sys
 import torch
 import numpy as np
+import pandas as pd
 from PIL import Image, TiffImagePlugin, ExifTags
 from torchvision import transforms
 import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
 from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 import warnings
@@ -14,10 +16,6 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import TQDMProgressBar, ModelCheckpoint
 from pytorch_lightning.loggers import CSVLogger
 from torchmetrics import Accuracy
-
-# NEW imports for LitData
-import litdata as ld
-from litdata import StreamingDataset, StreamingDataLoader
 
 # Suppress specific PIL warnings more aggressively
 warnings.filterwarnings("ignore", category=UserWarning, module="PIL")
@@ -61,6 +59,8 @@ os.makedirs(os.environ['HF_HOME'], exist_ok=True)
 os.makedirs(os.environ['TRANSFORMERS_CACHE'], exist_ok=True)
 os.makedirs(os.environ['HF_HUB_CACHE'], exist_ok=True)
 
+from datasets import load_dataset
+
 try:
     from src.lightning_module import CLIPLightningModule
     from config import VIT_B_32_CONFIG  # Assuming this config is for the base CLIP model
@@ -70,19 +70,19 @@ except ImportError as e:
     sys.exit(1)
 
 # --- Configuration ---
-CHECKPOINT_PATHS = [
-    #"/tmp/checkpoints/pretrain_checkpoints/nights_ft_from_yfcc_20250512_231704_ddp_nodeNone/checkpoints/last.ckpt",
-    "/dev/shm/checkpoints/yfcc15m_litdata_20250506_013343_ddp_nodeNone/checkpoints/monitor_val_cifar100_epoch_acc1-epoch_epoch=031.ckpt",
-    "/dev/shm/checkpoints/nights_init_yfcc15m_litdata_20250507_202423_ddp_nodeNone/checkpoints/monitor_val_cifar100_epoch_acc1-epoch_epoch=031.ckpt"
+CHECKPOINTS = [
+    {
+        "label": "0pct",
+        "path": "/home/kogs/checkpoints/perceptual_init_yfcc3m_vitb32_0pct/checkpoints/last.ckpt",
+    },
 ]
 
-# URIs for streaming ImageNet from Hugging Face with LitData
-HF_URI_TRAIN = "hf://datasets/benjamin-paine/imagenet-1k/train"
-HF_URI_VAL = "hf://datasets/benjamin-paine/imagenet-1k/validation"
-
+DATASET_NAME = "imagenet-1k"
 NUM_CLASSES = 1000
 IMAGE_KEY = "image"
 LABEL_KEY = "label"
+SPLIT_TRAIN = "train"
+SPLIT_TEST = "validation"  # ImageNet-1k uses 'validation' for test
 
 # CLIP Preprocessing
 CLIP_IMAGE_MEAN = (0.48145466, 0.4578275, 0.40821073)
@@ -90,10 +90,10 @@ CLIP_IMAGE_STD = (0.26862954, 0.26130258, 0.27577711)
 
 BATCH_SIZE_PER_GPU = 4096  # Reduced batch size to avoid memory issues
 NUM_GPUS_TO_USE = 6
-NUM_WORKERS = 8  # Reduced worker count to avoid issues
+NUM_WORKERS = 4  # Reduced worker count to avoid issues
 
 # Training parameters for the linear probe
-EPOCHS = 10
+EPOCHS = 32
 LEARNING_RATE = 0.001
 WEIGHT_DECAY = 0.01
 
@@ -125,20 +125,72 @@ def load_clip_model(ckpt_path, model_config):
         print(f"Error loading model from {ckpt_path}: {e}")
         raise
 
-# ----------------------------------------------------------------------
-# 1. Dataset wrapper that applies the CLIP transform
-# ----------------------------------------------------------------------
-class LitImageNetDataset(StreamingDataset):
-    def __init__(self, hf_uri: str, transform, shuffle=False, drop_last=False):
-        super().__init__(hf_uri, shuffle=shuffle, drop_last=drop_last)
-        self.transform = transform            # CLIP pipeline
+# --- Custom Dataset ---
+class ImageNet1kDataset(Dataset):
+    def __init__(self, split, transform, hf_token_val):
+        self.transform = transform
+        self.image_key = IMAGE_KEY
+        self.label_key = LABEL_KEY
+        print(f"Loading ImageNet-1k '{split}' split...")
+        try:
+            self.dataset = load_dataset(
+                DATASET_NAME,
+                split=split,
+                token=hf_token_val,  # Use the resolved token
+                trust_remote_code=True,
+                num_proc=4  # Number of processes for loading/preprocessing
+            )
+            print(f"Successfully loaded {len(self.dataset)} samples from '{split}' split.")
+        except Exception as e:
+            print(f"Failed to load dataset {DATASET_NAME} (split: {split}): {e}")
+            print("Please ensure you have access to the dataset and your Hugging Face token is correctly set up.")
+            print(f"Attempted to use token: {'Present' if hf_token_val else 'Absent'}")
+
+            # Attempt to load without token if it's possibly public or cached differently
+            if hf_token_val:
+                print("Retrying without explicit token...")
+                try:
+                     self.dataset = load_dataset(
+                        DATASET_NAME,
+                        split=split,
+                        trust_remote_code=True,
+                        num_proc=4
+                    )
+                     print(f"Successfully loaded {len(self.dataset)} samples from '{split}' split on retry.")
+                except Exception as e_retry:
+                    print(f"Retry failed: {e_retry}")
+                    raise e_retry
+            else:
+                raise e
+
+    def __len__(self):
+        return len(self.dataset)
 
     def __getitem__(self, idx):
-        sample = super().__getitem__(idx)
-        img = sample["image"]
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-        return self.transform(img), torch.tensor(sample["label"], dtype=torch.long)
+        try:
+            item = self.dataset[idx]
+            image = item[self.image_key]
+            label = item[self.label_key]
+
+            if image.mode != "RGB":
+                image = image.convert("RGB")
+            
+            # Strip EXIF data to avoid errors
+            image_data = io.BytesIO()
+            image.save(image_data, format=image.format or 'JPEG')
+            image_data.seek(0)
+            image = Image.open(image_data)
+            
+            transformed_image = self.transform(image)
+            return transformed_image, torch.tensor(label, dtype=torch.long)
+        except Exception as e:
+            # If an image fails, log it and return a black image with the same label
+            print(f"Error processing image at index {idx}: {str(e)}")
+            # Create a dummy image (black) of the right size
+            img_size = 224  # Default, will be resized by transform anyway
+            dummy_img = Image.new('RGB', (img_size, img_size), color='black')
+            transformed_dummy = self.transform(dummy_img)
+            return transformed_dummy, torch.tensor(item[self.label_key], dtype=torch.long)
 
 # --- Model with Linear Probe ---
 class CLIPWithLinearProbe(nn.Module):
@@ -155,45 +207,40 @@ class CLIPWithLinearProbe(nn.Module):
     def forward(self, images):
         with torch.no_grad():
             # Use normalize=True as features are typically normalized for linear probes
+            # The embedding_dim should match the output of encode_image
             image_embeddings = self.clip_model.encode_image(images, normalize=True)
         return self.probe(image_embeddings)
 
-# ----------------------------------------------------------------------
-# 2. Lightning DataModule using LitData loaders
-# ----------------------------------------------------------------------
-class ImageNetLitDataModule(pl.LightningDataModule):
-    def __init__(self, transform, batch_size, num_workers):
+# --- PyTorch Lightning DataModule ---
+class ImageNetDataModule(pl.LightningDataModule):
+    def __init__(self, image_transform, hf_token_val, batch_size_per_gpu, num_workers):
         super().__init__()
-        self.transform = transform
-        self.batch_size = batch_size
+        self.image_transform = image_transform
+        self.hf_token_val = hf_token_val
+        self.batch_size_per_gpu = batch_size_per_gpu
         self.num_workers = num_workers
+        self.train_dataset = None
+        self.val_dataset = None
 
     def setup(self, stage=None):
-        # Index datasets once (optional but faster)
-        try:
-            ld.index_hf_dataset(HF_URI_TRAIN)
-            ld.index_hf_dataset(HF_URI_VAL)
-        except Exception as e:
-            print(f"Warning: Could not pre-index datasets: {e}")
-            print("Will still attempt to stream without pre-indexing")
-            
+        # Called on every GPU in DDP
         if stage == "fit" or stage is None:
-            self.train_ds = LitImageNetDataset(
-                HF_URI_TRAIN, self.transform, shuffle=True, drop_last=True)
-            
+            self.train_dataset = ImageNet1kDataset(split=SPLIT_TRAIN, transform=self.image_transform, hf_token_val=self.hf_token_val)
+        
+        # It's good practice to also setup val dataset in 'fit' stage if validation runs during training
         if stage == "fit" or stage == "validate" or stage is None:
-            self.val_ds = LitImageNetDataset(
-                HF_URI_VAL, self.transform, shuffle=False, drop_last=False)
+            self.val_dataset = ImageNet1kDataset(split=SPLIT_TEST, transform=self.image_transform, hf_token_val=self.hf_token_val)
+
 
     def train_dataloader(self):
-        return StreamingDataLoader(
-            self.train_ds, batch_size=self.batch_size,
-            num_workers=self.num_workers, pin_memory=True)
+        if self.train_dataset is None:
+            raise RuntimeError("Train dataset not initialized. Call setup() first.")
+        return DataLoader(self.train_dataset, batch_size=self.batch_size_per_gpu, shuffle=True, num_workers=self.num_workers, pin_memory=True, drop_last=True)
 
     def val_dataloader(self):
-        return StreamingDataLoader(
-            self.val_ds, batch_size=self.batch_size,
-            num_workers=self.num_workers, pin_memory=True)
+        if self.val_dataset is None:
+            raise RuntimeError("Validation dataset not initialized. Call setup() first.")
+        return DataLoader(self.val_dataset, batch_size=self.batch_size_per_gpu, shuffle=False, num_workers=self.num_workers, pin_memory=True)
 
 # --- PyTorch Lightning Module ---
 class ImageNetLightningModule(pl.LightningModule):
@@ -206,7 +253,13 @@ class ImageNetLightningModule(pl.LightningModule):
         
         self.criterion = nn.CrossEntropyLoss()
         self.train_accuracy = Accuracy(task="multiclass", num_classes=num_classes)
+        self.train_accuracy_top5 = Accuracy(task="multiclass", num_classes=num_classes, top_k=5)
         self.val_accuracy = Accuracy(task="multiclass", num_classes=num_classes)
+        self.val_accuracy_top5 = Accuracy(task="multiclass", num_classes=num_classes, top_k=5)
+        
+        # For tracking best values
+        self.best_val_acc = 0.0
+        self.best_val_acc_top5 = 0.0
 
     def forward(self, images):
         return self.model(images)
@@ -216,9 +269,11 @@ class ImageNetLightningModule(pl.LightningModule):
         outputs = self(images)
         loss = self.criterion(outputs, labels)
         
-        self.train_accuracy(outputs, labels)
+        top1_acc = self.train_accuracy(outputs, labels)
+        top5_acc = self.train_accuracy_top5(outputs, labels)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-        self.log("train_acc", self.train_accuracy, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("train_acc", top1_acc, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("train_acc_top5", top5_acc, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -226,13 +281,24 @@ class ImageNetLightningModule(pl.LightningModule):
         outputs = self(images)
         loss = self.criterion(outputs, labels)
 
-        self.val_accuracy(outputs, labels)
+        top1_acc = self.val_accuracy(outputs, labels)
+        top5_acc = self.val_accuracy_top5(outputs, labels)
         self.log("val_loss", loss, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-        self.log("val_acc", self.val_accuracy, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("val_acc", top1_acc, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log("val_acc_top5", top5_acc, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         return loss
         
     def on_validation_epoch_end(self):
-        pass
+        # Get the current computed accuracy values
+        current_val_acc = self.val_accuracy.compute()
+        current_val_acc_top5 = self.val_accuracy_top5.compute()
+        
+        # Update best values if current ones are better
+        if current_val_acc > self.best_val_acc:
+            self.best_val_acc = current_val_acc
+            self.best_val_acc_top5 = current_val_acc_top5  # Store top5 along with best top1
+            
+        # The metrics will be automatically reset by PyTorch Lightning/torchmetrics
 
     def configure_optimizers(self):
         # Optimize only the probe's parameters
@@ -244,6 +310,12 @@ class ImageNetLightningModule(pl.LightningModule):
 
 # --- Main Script ---
 def main():
+    global hf_token # ensure global hf_token is accessible
+
+    if not hf_token:
+        print("Warning: Hugging Face token is not set. Dataset loading might fail for private datasets.")
+        # For imagenet-1k, token is usually required.
+
     # Determine number of GPUs to use for DDP
     available_gpus = torch.cuda.device_count()
     gpus_for_trainer = min(NUM_GPUS_TO_USE, available_gpus) if available_gpus > 0 else 0
@@ -257,7 +329,9 @@ def main():
         print(f"Using {gpus_for_trainer} GPUs for DDP training.")
         accelerator = "gpu"
         devices_trainer = gpus_for_trainer
+        # ddp_find_unused_parameters_true is safer for models where not all params are used in forward
         strategy_trainer = "ddp" 
+
 
     try:
         image_size = VIT_B_32_CONFIG.vision_cfg.image_size
@@ -272,17 +346,23 @@ def main():
 
     results_summary = []
 
-    for ckpt_path in CHECKPOINT_PATHS:
-        print(f"\n--- Processing checkpoint: {os.path.basename(ckpt_path)} ---")
+    for ckpt_info in CHECKPOINTS:
+        ckpt_label = ckpt_info["label"]
+        ckpt_path = ckpt_info["path"]
+
+        print(f"\n--- Processing checkpoint: {ckpt_label} ---")
+        print(f"Checkpoint path: {ckpt_path}")
+
         if not os.path.exists(ckpt_path):
-            print(f"Checkpoint not found: {ckpt_path}. Skipping.")
+            print(f"Checkpoint not found for {ckpt_label}: {ckpt_path}. Skipping.")
             continue
 
-        # Instantiate DataModule with LitData
-        data_module = ImageNetLitDataModule(
-            transform=image_transform,
-            batch_size=BATCH_SIZE_PER_GPU,
-            num_workers=NUM_WORKERS,
+        # Instantiate DataModule
+        data_module = ImageNetDataModule(
+            image_transform=image_transform,
+            hf_token_val=hf_token,
+            batch_size_per_gpu=BATCH_SIZE_PER_GPU,
+            num_workers=NUM_WORKERS
         )
 
         # Instantiate LightningModule
@@ -296,7 +376,7 @@ def main():
         )
         
         # Setup logger and callbacks
-        csv_logger = CSVLogger("logs", name=f"clip_linear_probe_imagenet_litdata_{os.path.basename(ckpt_path).replace('.ckpt','')}")
+        csv_logger = CSVLogger("logs", name=f"clip_linear_probe_imagenet_{ckpt_label}")
         progress_bar_callback = TQDMProgressBar(refresh_rate=10) # Refresh rate for tqdm
         
         # Checkpoint callback to save the best model based on validation accuracy
@@ -318,25 +398,45 @@ def main():
             precision='bf16-mixed' if accelerator == "gpu" else 32 # Optional: for mixed precision
         )
 
-        print(f"Starting training for checkpoint: {os.path.basename(ckpt_path)}")
+        print(f"Starting training for checkpoint: {ckpt_label}")
         trainer.fit(lightning_model, datamodule=data_module)
         
-        # After fit, the best val_acc is available in checkpoint_callback
-        best_val_acc = checkpoint_callback.best_model_score
-        if best_val_acc is not None:
-             print(f"Finished training for {os.path.basename(ckpt_path)}. Best Validation Accuracy: {best_val_acc.item():.2f}%")
-             results_summary.append({
-                "checkpoint": os.path.basename(ckpt_path),
-                "dataset": "imagenet-1k (LitData streaming)",
-                "accuracy": best_val_acc.item() # Storing the numeric value
+        # After fit, get the best accuracies from the model
+        if lightning_model.best_val_acc > 0:
+            best_val_acc = lightning_model.best_val_acc
+            best_val_acc_top5 = lightning_model.best_val_acc_top5
+            print(f"Finished training for {ckpt_label}.")
+            print(f"Best Top-1 Validation Accuracy: {best_val_acc.item()*100:.4f}%")
+            print(f"Best Top-5 Validation Accuracy: {best_val_acc_top5.item()*100:.4f}%")
+            
+            results_summary.append({
+                "checkpoint": ckpt_label,
+                "checkpoint_path": ckpt_path,
+                "dataset": DATASET_NAME,
+                "accuracy_top1": best_val_acc.item() * 100,
+                "accuracy_top5": best_val_acc_top5.item() * 100
             })
+            df = pd.DataFrame(results_summary)
+            df.to_csv("logs/imagenet_linear_probe_results.csv", index=False)
+            print(f"[{ckpt_label}] Saved intermediate CSV")
         else:
-            print(f"Finished training for {os.path.basename(ckpt_path)}. No validation accuracy recorded by checkpoint callback.")
+            print(f"Finished training for {ckpt_label}. No validation accuracy recorded.")
+
 
     print("\n--- Summary of Results ---")
+    print(f"{'Checkpoint':<60} | {'Top-1 Accuracy':<15} | {'Top-5 Accuracy':<15}")
+    print("-" * 95)
+    
+
+    if results_summary:
+        df = pd.DataFrame(results_summary)
+        save_path = "logs/imagenet_linear_probe_results.csv"
+        df.to_csv(save_path, index=False)
+        print(f"\nSaved CSV to {save_path}")
+    
     if results_summary:
         for res in results_summary:
-            print(f"Checkpoint: {res['checkpoint']}, Dataset: {res['dataset']}, Accuracy: {res['accuracy']:.2f}%")
+            print(f"{res['checkpoint']:<60} | {res['accuracy_top1']:>13.4f}% | {res['accuracy_top5']:>13.4f}%")
     else:
         print("No results to display. Check for errors during processing.")
 
