@@ -321,25 +321,25 @@ def get_baseline_yfcc15m_vith14_config() -> tuple[DeCLIPLitDataTrainingConfig, C
     training_config, model_config = get_config("declip_yfcc15m_litdata_vith14")
     return training_config, model_config
 
-# Perceptual-initialized YFCC15M pretraining configurations (Step 2)
-def get_perceptual_init_yfcc15m_vitb32_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
-    """Get perceptual-initialized YFCC15M ViT-B/32 configuration."""
-    training_config, model_config = get_config("perceptual_init_yfcc15m_vitb32")
+# brain-initialized YFCC15M pretraining configurations (Step 2)
+def get_brain_init_yfcc15m_vitb32_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
+    """Get brain-initialized YFCC15M ViT-B/32 configuration."""
+    training_config, model_config = get_config("brain_init_yfcc15m_vitb32")
     return training_config, model_config
 
-def get_perceptual_init_yfcc15m_vitb16_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
-    """Get perceptual-initialized YFCC15M ViT-B/16 configuration."""
-    training_config, model_config = get_config("perceptual_init_yfcc15m_vitb16")
+def get_brain_init_yfcc15m_vitb16_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
+    """Get brain-initialized YFCC15M ViT-B/16 configuration."""
+    training_config, model_config = get_config("brain_init_yfcc15m_vitb16")
     return training_config, model_config
 
-def get_perceptual_init_yfcc15m_vitl14_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
-    """Get perceptual-initialized YFCC15M ViT-L/14 configuration."""
-    training_config, model_config = get_config("perceptual_init_yfcc15m_vitl14")
+def get_brain_init_yfcc15m_vitl14_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
+    """Get brain-initialized YFCC15M ViT-L/14 configuration."""
+    training_config, model_config = get_config("brain_init_yfcc15m_vitl14")
     return training_config, model_config
 
-def get_perceptual_init_yfcc15m_vith14_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
-    """Get perceptual-initialized YFCC15M ViT-H/14 configuration."""
-    training_config, model_config = get_config("perceptual_init_yfcc15m_vith14")
+def get_brain_init_yfcc15m_vith14_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
+    """Get brain-initialized YFCC15M ViT-H/14 configuration."""
+    training_config, model_config = get_config("brain_init_yfcc15m_vith14")
     return training_config, model_config
 
 # Fine-tuning configurations (Step 3 alternative)
@@ -359,9 +359,9 @@ def get_baseline_yfcc15m_resnet50_config() -> tuple[DeCLIPLitDataTrainingConfig,
     training_config, model_config = get_config("declip_yfcc15m_litdata_resnet50")
     return training_config, model_config
 
-def get_perceptual_init_yfcc15m_resnet50_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
-    """Get perceptual-initialized YFCC15M ResNet-50 configuration."""
-    training_config, model_config = get_config("perceptual_init_yfcc15m_resnet50")
+def get_brain_init_yfcc15m_resnet50_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
+    """Get brain-initialized YFCC15M ResNet-50 configuration."""
+    training_config, model_config = get_config("brain_init_yfcc15m_resnet50")
     return training_config, model_config
 
 # Unified configuration instances with new naming
@@ -376,10 +376,10 @@ BASELINE_YFCC15M_VITB16_CONFIG, _ = get_baseline_yfcc15m_vitb16_config()
 BASELINE_YFCC15M_VITL14_CONFIG, _ = get_baseline_yfcc15m_vitl14_config()
 BASELINE_YFCC15M_VITH14_CONFIG, _ = get_baseline_yfcc15m_vith14_config()
 
-PERCEPTUAL_INIT_YFCC15M_VITB32_CONFIG, _ = get_perceptual_init_yfcc15m_vitb32_config()
-PERCEPTUAL_INIT_YFCC15M_VITB16_CONFIG, _ = get_perceptual_init_yfcc15m_vitb16_config()
-PERCEPTUAL_INIT_YFCC15M_VITL14_CONFIG, _ = get_perceptual_init_yfcc15m_vitl14_config()
-PERCEPTUAL_INIT_YFCC15M_VITH14_CONFIG, _ = get_perceptual_init_yfcc15m_vith14_config()
+BRAIN_INIT_YFCC15M_VITB32_CONFIG, _ = get_brain_init_yfcc15m_vitb32_config()
+BRAIN_INIT_YFCC15M_VITB16_CONFIG, _ = get_brain_init_yfcc15m_vitb16_config()
+BRAIN_INIT_YFCC15M_VITL14_CONFIG, _ = get_brain_init_yfcc15m_vitl14_config()
+BRAIN_INIT_YFCC15M_VITH14_CONFIG, _ = get_brain_init_yfcc15m_vith14_config()
 
 NIGHTS_FT_FROM_YFCC_VITB32_CONFIG, _ = get_nights_ft_from_yfcc_vitb32_config()
 # IMAGENET1K_INIT_VITB32_CONFIG, _ = get_imagenet1k_init_vitb32_config()
@@ -387,13 +387,13 @@ NIGHTS_FT_FROM_YFCC_VITB32_CONFIG, _ = get_nights_ft_from_yfcc_vitb32_config()
 # ResNet-50 experiment configurations
 NOD_INIT_RESNET50_CONFIG, _ = get_nod_init_resnet50_config()
 BASELINE_YFCC15M_RESNET50_CONFIG, _ = get_baseline_yfcc15m_resnet50_config()
-PERCEPTUAL_INIT_YFCC15M_RESNET50_CONFIG, _ = get_perceptual_init_yfcc15m_resnet50_config()
+BRAIN_INIT_YFCC15M_RESNET50_CONFIG, _ = get_brain_init_yfcc15m_resnet50_config()
 
 # Legacy naming for backward compatibility (deprecated - use new naming above)
 NOD_INIT_CONFIG = NOD_INIT_VITB32_CONFIG  # Default to B/32
 DECLIP_YFCC15M_LITDATA_VITB32_CONFIG = BASELINE_YFCC15M_VITB32_CONFIG
 DECLIP_YFCC15M_LITDATA_VITH14_CONFIG = BASELINE_YFCC15M_VITH14_CONFIG
-NIGHTS_INIT_DECLIP_YFCC15M_LITDATA_VITB32_CONFIG = PERCEPTUAL_INIT_YFCC15M_VITB32_CONFIG
+NIGHTS_INIT_DECLIP_YFCC15M_LITDATA_VITB32_CONFIG = BRAIN_INIT_YFCC15M_VITB32_CONFIG
 NIGHTS_FT_FROM_YFCC_CONFIG = NIGHTS_FT_FROM_YFCC_VITB32_CONFIG
 
 
