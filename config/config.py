@@ -24,8 +24,6 @@ try:
         CLIPLossConfig,
         DeCLIPLitDataTrainingConfig,
         NodTrainingConfig,
-        ThingsTrainingConfig,
-        # ImageNet1kTrainingConfig
     )
 except ImportError:
     # When run directly
@@ -48,8 +46,6 @@ except ImportError:
     CLIPLossConfig,
     DeCLIPLitDataTrainingConfig,
     NodTrainingConfig,
-    ThingsTrainingConfig,
-    # ImageNet1kTrainingConfig
 )
 
 # Get the directory where this config.py file is located
@@ -152,16 +148,6 @@ def load_training_config(config_name: str) -> TrainingConfig:
     # Determine which TrainingConfig subclass to use
     if "nod" in config_type.lower():
         return NodTrainingConfig(
-            data=data_config,
-            optimizer=optimizer_config,
-            scheduler=scheduler_config,
-            loss=loss_config,
-            distributed=distributed_config,
-            wandb=wandb_config,
-            **config_data_copy
-        )
-    elif "things" in config_type.lower():
-        return ThingsTrainingConfig(
             data=data_config,
             optimizer=optimizer_config,
             scheduler=scheduler_config,
@@ -287,19 +273,7 @@ def get_nod_init_vith14_config() -> tuple[NodTrainingConfig, CLIPConfig]:
     """Get NOD init ViT-H/14 configuration."""
     training_config, model_config = get_config("nod_init_vith14")
     return training_config, model_config
-
-# THINGS initialization configurations (Alternative to NIGHTS)
-def get_things_init_vitb32_config() -> tuple[ThingsTrainingConfig, CLIPConfig]:
-    """Get THINGS init ViT-B/32 configuration."""
-    training_config, model_config = get_config("things_init_vitb32")
-    return training_config, model_config
-
-# # ImageNet-1k initialization configurations (Ablation study)
-# def get_imagenet1k_init_vitb32_config() -> tuple[TrainingConfig, CLIPConfig]:
-#     """Get ImageNet-1k init ViT-B/32 configuration."""
-#     training_config, model_config = get_config("imagenet1k_init_vitb32")
-#     return training_config, model_config
-
+    
 # Baseline YFCC15M pretraining configurations (Step 3 baseline)
 def get_baseline_yfcc15m_vitb32_config() -> tuple[DeCLIPLitDataTrainingConfig, CLIPConfig]:
     """Get baseline YFCC15M ViT-B/32 configuration."""
@@ -369,7 +343,6 @@ NOD_INIT_VITB32_CONFIG, _ = get_nod_init_vitb32_config()
 NOD_INIT_VITB16_CONFIG, _ = get_nod_init_vitb16_config()
 NOD_INIT_VITL14_CONFIG, _ = get_nod_init_vitl14_config()
 NOD_INIT_VITH14_CONFIG, _ = get_nod_init_vith14_config()
-THINGS_INIT_VITB32_CONFIG, _ = get_things_init_vitb32_config()
 
 BASELINE_YFCC15M_VITB32_CONFIG, _ = get_baseline_yfcc15m_vitb32_config()
 BASELINE_YFCC15M_VITB16_CONFIG, _ = get_baseline_yfcc15m_vitb16_config()
@@ -381,9 +354,6 @@ BRAIN_INIT_YFCC15M_VITB16_CONFIG, _ = get_brain_init_yfcc15m_vitb16_config()
 BRAIN_INIT_YFCC15M_VITL14_CONFIG, _ = get_brain_init_yfcc15m_vitl14_config()
 BRAIN_INIT_YFCC15M_VITH14_CONFIG, _ = get_brain_init_yfcc15m_vith14_config()
 
-NIGHTS_FT_FROM_YFCC_VITB32_CONFIG, _ = get_nights_ft_from_yfcc_vitb32_config()
-# IMAGENET1K_INIT_VITB32_CONFIG, _ = get_imagenet1k_init_vitb32_config()
-
 # ResNet-50 experiment configurations
 NOD_INIT_RESNET50_CONFIG, _ = get_nod_init_resnet50_config()
 BASELINE_YFCC15M_RESNET50_CONFIG, _ = get_baseline_yfcc15m_resnet50_config()
@@ -394,7 +364,6 @@ NOD_INIT_CONFIG = NOD_INIT_VITB32_CONFIG  # Default to B/32
 DECLIP_YFCC15M_LITDATA_VITB32_CONFIG = BASELINE_YFCC15M_VITB32_CONFIG
 DECLIP_YFCC15M_LITDATA_VITH14_CONFIG = BASELINE_YFCC15M_VITH14_CONFIG
 NIGHTS_INIT_DECLIP_YFCC15M_LITDATA_VITB32_CONFIG = BRAIN_INIT_YFCC15M_VITB32_CONFIG
-NIGHTS_FT_FROM_YFCC_CONFIG = NIGHTS_FT_FROM_YFCC_VITB32_CONFIG
 
 
 if __name__ == "__main__":
